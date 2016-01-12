@@ -1,5 +1,6 @@
+""" Factor Graph for morphology """
 
-class Edge(class):
+class Edge(object):
     """ Edge """
 
     def __init__(self, f, v):
@@ -42,7 +43,7 @@ class Edge(class):
         self.v.b = self.v.b / stale * self.m_v
 
         
-class Variable(class):
+class Variable(object):
     """ Variable in the factor graph """
     
     def __init__(self, lang, word):
@@ -50,8 +51,9 @@ class Variable(class):
         self.edges = []
         # the belief
         self.b = None
+
         
-class Factor(class):
+class Factor(object):
     """ Factor in the factor graph """
 
     def __init__(self):
@@ -72,7 +74,7 @@ class BinaryFactor(Factor):
         pass
 
     
-class FactorGraph(class):
+class FactorGraph(object):
     """ Factor graph for the multi-lingual morphology induction process """
 
     def __init__(self):
