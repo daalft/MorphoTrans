@@ -22,16 +22,20 @@ class Edge(class):
         
     def p2f(self):
         """ Passes the message to the factor """
-        self.m_f = self.b / self.v
 
+        stale = self.m_f
+        self.m_f = self.v.b / self.m_v
+        self.f.b = self.f.b / stale * self.m_f
 
+        
+        
     def p2v(self):
         """ Passes the message to the variable """
 
-        stale = self.m_v
         # TODO
-        #self.m_v = 
-
+        stale = self.m_v
+        self.m_v = self.f.b / self.m_f
+        
         # update the belief by dividing out the
         # stale message and multiplying (point-wise)
         # in the new message
@@ -51,7 +55,7 @@ class Factor(class):
     """ Factor in the factor graph """
 
     def __init__(self):
-        pass
+        self.b = None
 
     
 class UnaryFactor(Factor):
