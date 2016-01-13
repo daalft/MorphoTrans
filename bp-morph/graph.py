@@ -135,7 +135,7 @@ class FactorGraph(object):
         """ performs the E-step """
 
         for i in xrange(iterations):
-            pass
+            self.inference()
 
         
     def inference(self):
