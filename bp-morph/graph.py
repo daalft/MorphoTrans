@@ -3,6 +3,7 @@ import numpy as np
 from numpy import zeros, ones, eye, dot, exp
 from graphviz import Graph
 import itertools as it
+import operator
 
 class Edge(object):
     """ Edge """
@@ -30,6 +31,7 @@ class Edge(object):
 
         stale = self.m_f
         self.m_f = self.v.b / self.m_v
+        
         self.f.b = self.f.b / stale * self.m_f
 
         
@@ -41,12 +43,12 @@ class Edge(object):
         else:
             stale = self.m_v
             self.f.p2(self.fi)
-        
+
             # update the belief by dividing out the
             # stale message and multiplying (point-wise)
             # in the new message
-            self.v.b = self.v.b / stale * self.m_v
 
+            self.v.b = self.v.b / stale * self.m_v
         
     def __unicode__(self):
         return unicode(self.v)+" => "+unicode(self.f)
@@ -87,9 +89,6 @@ class Factor(object):
         self.b = .5 * ones((N))
         self.edges = []
 
-    def p2(self, i):
-        """ pass to the ith factor """
-        pass
 
         
 class UnaryFactor(Factor):
@@ -106,6 +105,7 @@ class BinaryFactor(Factor):
         super(BinaryFactor, self).__init__(N)
         self.N = N
         self.F = eye(N)
+        self.F = np.random.rand(N, N)
         self.source_lang, self.target_lang = source_lang, target_lang
         self.source, self.target = source, target
 
@@ -113,7 +113,7 @@ class BinaryFactor(Factor):
     def p2(self, i):
         """ pass 2 the ith factor """
         j = 0 if i == 1 else 1
-        self.edges[i].m_v = exp(dot(self.F, self.edges[j].m_f))
+        self.edges[i].m_v = exp(dot(self.edges[j].m_f, self.F))
         
         
     def __unicode__(self):
@@ -147,37 +147,36 @@ class FactorGraph(object):
         for e in self.edges:
             # does it matter that this two things are close
             # together
-            print "2 V"
-            print unicode(e)
+         
             e.p2v()
-            print e.m_v
-            raw_input()
-            print "2 F"
-            print e.v.observed, e.v.b
             e.p2f()
-            print unicode(e)
-            print e.m_f
-            raw_input()
-            print unicode(e)
-            raw_input()
-
+         
     def Z(self):
         """ 
         Computes the partition function based on the 
         current beliefs
         """
         Zs = []
-        for k, f in self.fs.items():
+        for k, v in self.vs.items():
+            if v.observed:
+                continue
 
+            Z = 1.0
             lst = []
-            for e in f.edges:
-                lst.append(e.m_f)
-            Z = dot(dot(lst[0], f.F), lst[1])
+            for e in v.edges:
+                lst.append(e.m_v)
+
+            z = 1.0
+            for l in lst:
+                z *= l[0]
+            Z *= (z + 1)
+            z = 1.0
+            for l in lst:
+                z *= l[1]
+            Z *= (z + 1)
             Zs.append(Z)
 
-        print Zs
-        for Z1, Z2 in zip(Zs, Zs[1:]):
-            assert Z1 == Z2
+        return reduce(operator.mul, Zs, 1.0)
             
     def brute_force_inference(self):
         """ brute force the inference for unit test """
@@ -200,15 +199,12 @@ class FactorGraph(object):
                     counter += 1
             
             # get scores
-            print "START"
             config_score = 1.0
             for k, f in self.fs.items():
                 vecs = [e.v.b for e in f.edges]
-                print f
-                print vecs
                 score = exp(dot(dot(vecs[0], f.F), vecs[1]))
                 config_score *= score
-            print "DONE"
+
             Z += config_score
         print "Z", Z
             
