@@ -1,0 +1,50 @@
+\documentclass[12pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{algorithm,algorithmicx,algpseudocode}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{bbold}
+
+\newcommand{\opluseq}{\mathrel{\oplus}=}
+\newcommand{\otimeseq}{\mathrel{\otimes}=}
+
+%\algrenewcommand{\algorithmiccomment}[1]{\hfill$\blacktriangleright$ #1}
+\renewcommand{\vec}{\boldsymbol}   % optional
+\newcommand{\m}{m}
+\newcommand{\lo}{\ell_1}
+\newcommand{\lt}{\ell_2}
+\newcommand{\All}{A_{\lt}^{\lo}}
+\begin{document}
+
+\section{Factor Graph}
+We will define the topology of the graph by phrase tables.  Let
+$\m_{k^\ell} \in \mathbb{B}^n$ be an encoding of {\em all possible}
+morphological tags for the $k$ word type in language $\ell$.  Note that $\mathbb{B}^n$
+denotes the set of binary vectors of length $n$. Let
+$\All$ be the set of all aligned types between
+languages $\ell_1$ and $\ell_2$. We define the model as
+\begin{equation}
+p(\m_1^{\ell_1}, \ldots, \m_N^{\ell_2} \mid \m_1^{\ell_2}, \ldots, \m_N^{\ell_2}) = \frac{1}{Z}\exp\left(\sum_{(k^{\lo}, k^{\lt})\in \All} \m_{k^{\lo}}^{\top} W \m_{k^{\lt}} + \sum_k u^{\top} f(k^{\lt}, \m_{k^{\lt}})  \right)
+\end{equation}
+\subsection{Log-Linear Factors}
+We introduce unary factors that score the relation between the {\em surface form}
+of a word and it's morphological tag. This factor takes the form: $\exp\left( u^{\top} f(k^{\lt}, \m_{k^{\lt}}) \right)$.
+
+\subsection{Log-Quadratic Factors}
+The log-quadratic factors $\exp\left( \m_{k^{\lo}}^{\top} W \m_{k^{\lt}} \right)$ scores the relation between the
+morphological tag vectors of the source and target language. 
+
+
+\section{Inference}
+Belief Propagation.
+\begin{equation}
+\text{score}{v_1, v_2) = x_{v_1}^{\top} W_{\alpha} x_{v_2}
+\end{equation}
+\subsection{Variable to Factor Message}
+We want to compute the message
+\begin{equation}
+  \mu_{\alpha \rightarrow v_2}_i = x_{v_1}^{\top} W_{\alpha} x
+  \end{equation}
+
+\end{document}

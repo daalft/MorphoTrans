@@ -1,6 +1,6 @@
 """ Factor Graph for morphology """
 import numpy as np
-from numpy import zeros, ones, eye, dot
+from numpy import zeros, ones, eye, dot, exp
 from graphviz import Graph
 import itertools as it
 
@@ -36,14 +36,16 @@ class Edge(object):
     def p2v(self):
         """ Passes the message to the variable """
 
-        # TODO
-        stale = self.m_v
-        self.f.p2(self.fi)
+        if self.v.observed:
+            self.m_v = self.v.b
+        else:
+            stale = self.m_v
+            self.f.p2(self.fi)
         
-        # update the belief by dividing out the
-        # stale message and multiplying (point-wise)
-        # in the new message
-        self.v.b = self.v.b / stale * self.m_v
+            # update the belief by dividing out the
+            # stale message and multiplying (point-wise)
+            # in the new message
+            self.v.b = self.v.b / stale * self.m_v
 
         
     def __unicode__(self):
@@ -111,7 +113,7 @@ class BinaryFactor(Factor):
     def p2(self, i):
         """ pass 2 the ith factor """
         j = 0 if i == 1 else 1
-        self.edges[i].m_v = dot(self.F, self.edges[j].m_f)
+        self.edges[i].m_v = exp(dot(self.F, self.edges[j].m_f))
         
         
     def __unicode__(self):
@@ -131,7 +133,7 @@ class FactorGraph(object):
         self.edges = []
     
         
-    def E_step(self, iterations=10):
+    def E_step(self, iterations=2):
         """ performs the E-step """
 
         for i in xrange(iterations):
@@ -141,16 +143,41 @@ class FactorGraph(object):
     def inference(self):
         # TODO: consider randommizing?
         # What's the best passing order?
-        print "HERE"
+
         for e in self.edges:
             # does it matter that this two things are close
             # together
+            print "2 V"
+            print unicode(e)
             e.p2v()
+            print e.m_v
+            raw_input()
+            print "2 F"
+            print e.v.observed, e.v.b
             e.p2f()
-            #print unicode(e)
-            #raw_input()
-        print "THERE"
-        
+            print unicode(e)
+            print e.m_f
+            raw_input()
+            print unicode(e)
+            raw_input()
+
+    def Z(self):
+        """ 
+        Computes the partition function based on the 
+        current beliefs
+        """
+        Zs = []
+        for k, f in self.fs.items():
+
+            lst = []
+            for e in f.edges:
+                lst.append(e.m_f)
+            Z = dot(dot(lst[0], f.F), lst[1])
+            Zs.append(Z)
+
+        print Zs
+        for Z1, Z2 in zip(Zs, Zs[1:]):
+            assert Z1 == Z2
             
     def brute_force_inference(self):
         """ brute force the inference for unit test """
@@ -169,15 +196,19 @@ class FactorGraph(object):
             for k, v in self.vs.items():
                 if not v.observed:
                     val = config[counter*self.N:(counter+1)*self.N]
-                    #v.b = val
+                    v.b = val
                     counter += 1
             
             # get scores
+            print "START"
             config_score = 1.0
             for k, f in self.fs.items():
                 vecs = [e.v.b for e in f.edges]
-                score = dot(dot(vecs[0], f.F), vecs[1])
+                print f
+                print vecs
+                score = exp(dot(dot(vecs[0], f.F), vecs[1]))
                 config_score *= score
+            print "DONE"
             Z += config_score
         print "Z", Z
             
