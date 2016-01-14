@@ -25,7 +25,7 @@ class RRBM(object):
 
     """
 
-    def __init__(self, N, train, C = 0.00):
+    def __init__(self, N, train, C = 0.01):
         self.N = N
         self.train = train
         self.C = C  # regularization coefficient
@@ -86,7 +86,7 @@ class RRBM(object):
         """ predicts a y given an x using the parameters of the model """
         
         tmp = exp(dot(x, self.W) + self.b)
-        marg = tmp / (1 + tmp)
+        marg = 1 / (1 + tmp)
         return np.round(marg)
 
 
@@ -97,13 +97,13 @@ class RRBM(object):
         N = float(len(heldout))
         for x, y in heldout:
             y_pred = self.predict(x)
-            err += 0.0 if y == y_pred else 0
-            ham += hamming(y, y_pred)
+            err += 0.0 if (y == y_pred).all() else 0
+            ham += hamming(y, y_pred) * len(y)
 
         return err / N, ham / N
         
 
-    def learn(self):
+    def learn(self, disp=0):
         """ trains the model using batch L-BFGS """
 
         def ff(vec):
@@ -116,7 +116,7 @@ class RRBM(object):
             return self.theta2vec(gW, gb) + self.C * vec
         
         v = self.theta2vec(self.W, self.b)
-        #lbfgs(
+        v, _, _ = lbfgs(ff, v, fprime=gg, disp=disp)
         self.W, self.b = self.vec2theta(v)
             
     def theta2vec(self, W, b):

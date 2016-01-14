@@ -1,7 +1,6 @@
 from model import RRBM
 import numpy as np
 from numpy import zeros
-from scipy.optimize import fmin_l_bfgs_b as lbfgs
 
 def fd(model, EPS=0.01):
     """ finite difference check f """
@@ -63,3 +62,12 @@ assert (W2 == model.W).all()
 assert (b2 == model.b).all()
 
 # check optimization
+err, ham = model.eval(test)
+print err
+print ham
+
+model.learn()
+
+err, ham = model.eval(test)
+print err
+print ham
