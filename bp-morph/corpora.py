@@ -114,6 +114,10 @@ class Lexicon(object):
             for l, ts in lst:
                 for tag in ts:
                     a, v = tag.split("=")
+
+                    if a != "pos":
+                        continue
+                    
                     j = self.avs[(a, v)]
                     vec[j] = 1.0
             i = self.words[w]
@@ -129,6 +133,7 @@ class Lexicon(object):
                 lst.append("=".join(self.avs.lookup(n)))
         return word, ",".join(lst)
 
+    
     def __getitem__(self, word):
         i = self.words[word]
         return self.W[i]

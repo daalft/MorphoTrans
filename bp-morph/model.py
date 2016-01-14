@@ -4,6 +4,7 @@ from scipy.spatial.distance import hamming
 import itertools as it
 from scipy.optimize import fmin_l_bfgs_b as lbfgs
 from collections import defaultdict as dd
+from arsenal.alphabet import Alphabet
 
 class TagPair(object):
     """
@@ -151,4 +152,61 @@ class RRBM(object):
         b = lst[1]
         return W, b
 
+    
+
+class StringFeatures(object):
+    """ String features """
+    
+    def __init__(self, N, prefix_length=4, suffix_length=4):
+        self.N = N
+        self.prefix_length, self.suffix_length = prefix_length, suffix_length
+        self.features = Alphabet()
+        self.word2features = {}
+        
+    def features(self, word, extract=False):
+        """ extract the features """
+        
+        lst = []
+        for i in xrange(1, self.prefix_length+1):
+            if i > len(word):
+                break
+            prefix = word[:i]
+            name = "PREFIX: "+prefix
+            if extract:
+                self.features.add(name)
+            lst.append(self.features[name])
+            
+        for i in xrange(1, self.suffix_length+1):
+            if i < 0:
+                break
+            suffix = word[-i:]
+            name = "SUFFIX: "+suffix
+            if extract:
+                self.features.add(name)
+            lst.append(self.features[name])
+        return add
+
+    def store(self, word):
+        """ store the features """
+        self.word2features[word] = self.features(word, True)
+
+    def __len__(self):
+        return len(self.features)
+
+    def __getitem__(self, word):
+        if word in self.features:
+            return self.features[word]
+        else:
+            return self.features(word)
+        
+        
+class SurfaceForm(object):
+    """ Surface Form Classifier """
+
+    def __init__(self, N, train, C=0.01):
+        self.N = N
+        self.train = train
+        self.C = C
+
+            
     

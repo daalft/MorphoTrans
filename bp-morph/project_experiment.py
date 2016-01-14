@@ -68,7 +68,13 @@ for experiment in xrange(experiments):
     for (l1, l2) in test_keys:
         test.append((lex_col[lang1][l1], lex_col[lang2][l2]))
             
+        entry1 = lex_col[lang1].pp(l1)
+        entry2 = lex_col[lang2].pp(l2)
 
+        #if "num=PL" in entry2[1]:
+        #    print l2, entry2[1]
+
+        
     for size in [110]: #sizes:
         train_keys = sample_from_d(d, size, lex_col[lang1], lex_col[lang2], test_keys_set)
         train = []
@@ -84,7 +90,7 @@ for experiment in xrange(experiments):
         C_best = 0
         err, hmm, mistakes = float("inf"), float("inf"), None
         # grid search
-        for C in [0.1]:#, 0.1, 0.5, 1.0, 2.0, 3.0, 4.0]:
+        for C in [0.1]: #[0.1, 0.5, 1.0, 2.0, 3.0, 4.0]:
             model.C = C
             model.learn(disp=0)
             err_tmp, hmm_tmp, mistakes_tmp = model.eval(test)
@@ -99,15 +105,15 @@ for experiment in xrange(experiments):
         for k, v in sorted(mistakes.items(), key=lambda x: -x[1]):
             print lex_col.avs.lookup(k), v
 
-        # for l1, l2 in test_keys:
-        #     i1 = lex_col[lang1][l1]
-        #     i2 = lex_col[lang2][l2]
-        #     print l1, lex_col[lang1].pp(l1)
-        #     print l2, lex_col[lang2].pp(l2)
-        #     err, hmm, mistakes = model.eval([(i1, i2)])
-        #     for k, v in mistakes.items():
-        #         print lex_col.avs.lookup(k)
-        #     raw_input()
+        for l1, l2 in test_keys:
+            i1 = lex_col[lang1][l1]
+            i2 = lex_col[lang2][l2]
+            print l1, lex_col[lang1].pp(l1)
+            print l2, lex_col[lang2].pp(l2)
+            err, hmm, mistakes = model.eval([(i1, i2)])
+            for k, v in mistakes.items():
+                print lex_col.avs.lookup(k)
+            raw_input()
         raw_input()
         #print len(test), len(train), len(test.intersection(train))
         #exit(0)
