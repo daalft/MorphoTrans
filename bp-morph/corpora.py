@@ -1,5 +1,7 @@
+from numpy import zeros
 from collections import defaultdict as dd
 from arsenal.alphabet import Alphabet
+import codecs
 
 class Dictionary(object):
     """ Reads in the dictionary with confidence scores """
@@ -35,13 +37,33 @@ class LexiconCollection(object):
         self.vals = Alphabet()
         self.av = dd(set)
         self.avs = Alphabet()
-
         self.lexicons = {}
+        self.N = -1
 
     def add(self, lang, fin):
-        self.lexicons[lang] = Lexicon(lang, self.atts, self.vals, self.av, self.avs)
-                
-                
+        """ add a language """
+        self.lexicons[lang] = Lexicon(fin, self.atts, self.vals, self.av, self.avs)
+
+    def create(self):
+        """ creates the vectors """
+        for lang, lex in self.lexicons.items():
+            lex.create_vectors()
+
+        # unit test
+        Ns = []
+        for lang, lex in self.lexicons.items():
+            Ns.append(lex.N)
+        if len(Ns) == 2:
+            assert Ns[0] == Ns[1]
+        else:
+            raise("Extend! More lexicons!")
+
+        self.N = Ns[0]
+        
+    def __getitem__(self, lang):
+        return self.lexicons[lang]
+
+    
 class Lexicon(object):
     """ Reads in the universal morpholigcal lexicon """
 
@@ -63,6 +85,9 @@ class Lexicon(object):
                 tags = tags.split(",")
 
                 for tag in tags:
+                    if len(tag.split("=")) != 2:
+                        print line
+                        print tag
                     a, v = tag.split("=")
                     self.av[a].add(v)
 
@@ -78,6 +103,8 @@ class Lexicon(object):
         for a, s in self.av.items():
             for v in s:
                 self.avs.add((a, v))
+
+    def create_vectors(self):
         self.N = len(self.avs)
         self.W = zeros((len(self.lexicon), self.N))
         
@@ -92,18 +119,20 @@ class Lexicon(object):
             i = self.words[w]
             self.W[i] = vec
 
-        print self.pp(5)
-
         
-    def pp(self, i):
+    def pp(self, word):
         """ pretty print the morphological tag of a word """
-        word = self.words.lookup(i)
+        i = self.words[word]
         lst = []
         for n in xrange(self.N):
             if self.W[i, n] > 0:
                 lst.append("=".join(self.avs.lookup(n)))
         return word, ",".join(lst)
-        
+
+    def __getitem__(self, word):
+        i = self.words[word]
+        return self.W[i]
+            
                     
 class EntailmentReader(object):
     """ Reads in John Sylak-Glassman's entailments for the features """

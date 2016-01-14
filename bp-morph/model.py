@@ -3,6 +3,7 @@ from numpy import eye, zeros, exp, log, dot, outer
 from scipy.spatial.distance import hamming
 import itertools as it
 from scipy.optimize import fmin_l_bfgs_b as lbfgs
+from collections import defaultdict as dd
 
 class TagPair(object):
     """
@@ -29,11 +30,19 @@ class RRBM(object):
         self.N = N
         self.train = train
         self.C = C  # regularization coefficient
-        self.W = np.random.rand(N, N)
-        #self.W = eye(N)
-        self.b = np.random.random(N)
-        #self.b = zeros((N))
+        self.reset()
 
+
+    def reset(self, random=False):
+        """ reset the parameters to the initial values (just copy the tag) """
+        
+        if random:
+            self.W = np.random.rand(self.N, self.N)
+            self.b = np.random.random(self.N)
+        else:
+            self.W = eye(self.N)
+            self.b = zeros((self.N))
+        
         
     def Z(self, W, b, x):
         """ Computes the log partition function Z(x) """
@@ -86,39 +95,48 @@ class RRBM(object):
         """ predicts a y given an x using the parameters of the model """
         
         tmp = exp(dot(x, self.W) + self.b)
-        marg = 1 / (1 + tmp)
+        marg = tmp / (1 + tmp)
         return np.round(marg)
 
 
     def eval(self, heldout):
         """ evaluate under two metrics: 1-best error rate and hamming """
-        
+
+        mistakes = dd(int)
         err, ham  = 0, 0
         N = float(len(heldout))
+
         for x, y in heldout:
             y_pred = self.predict(x)
-            err += 0.0 if (y == y_pred).all() else 0
+            err += 0.0 if (y == y_pred).all() else 1
             ham += hamming(y, y_pred) * len(y)
 
-        return err / N, ham / N
+            for i, (y1, y2) in enumerate(zip(y, y_pred)):
+                if y1 != y2:
+                    mistakes[i] += 1
+                    
+        return err / N, ham / N, dict(mistakes)
         
 
     def learn(self, disp=0):
         """ trains the model using batch L-BFGS """
+        reg = self.theta2vec(eye(self.N), zeros((self.N)))
 
+        
         def ff(vec):
             W, b = self.vec2theta(vec)
-            return self.f(W, b) + self.C / 2.0 * np.dot(vec, vec)
+            return self.f(W, b) + self.C / 2.0 * np.dot(vec - reg, vec - reg)
 
         def gg(vec):
             W, b = self.vec2theta(vec)
             gW, gb = self.g(W, b)
-            return self.theta2vec(gW, gb) + self.C * vec
+            return self.theta2vec(gW, gb) + self.C * (vec - reg)
         
         v = self.theta2vec(self.W, self.b)
         v, _, _ = lbfgs(ff, v, fprime=gg, disp=disp)
         self.W, self.b = self.vec2theta(v)
-            
+
+        
     def theta2vec(self, W, b):
         """ converts the parameters W and b to one long vector """
         
