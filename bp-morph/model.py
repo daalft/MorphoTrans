@@ -160,10 +160,17 @@ class StringFeatures(object):
     def __init__(self, N, prefix_length=4, suffix_length=4):
         self.N = N
         self.prefix_length, self.suffix_length = prefix_length, suffix_length
+        self.attributes = Alphabet()
+        self.word2attributes = {}
+        self.words = Alphabet()
         self.features = Alphabet()
-        self.word2features = {}
+
+        for i in xrange(N):
+            self.features.add(i)
+
+        self.featlst = {}
         
-    def features(self, word, extract=False):
+    def attributes(self, word, extract=False):
         """ extract the features """
         
         lst = []
@@ -173,8 +180,8 @@ class StringFeatures(object):
             prefix = word[:i]
             name = "PREFIX: "+prefix
             if extract:
-                self.features.add(name)
-            lst.append(self.features[name])
+                self.attributes.add(name)
+            lst.append(self.attributes[name])
             
         for i in xrange(1, self.suffix_length+1):
             if i < 0:
@@ -182,22 +189,40 @@ class StringFeatures(object):
             suffix = word[-i:]
             name = "SUFFIX: "+suffix
             if extract:
-                self.features.add(name)
-            lst.append(self.features[name])
-        return add
+                self.attributes.add(name)
+            lst.append(self.attributes[name])
+
+        return lst
+                
 
     def store(self, word):
         """ store the features """
-        self.word2features[word] = self.features(word, True)
 
+        self.words.add(word)
+        self.word2attributes[word] = self.attributes(word, True)
+        lst = self.word2attributes[word]
+        # get conjunctions
+        for i in xrange(N):
+            for f in lst:
+                self.features.add((i, f))
+
+        wordid = self.words[word]
+        for i in xrange(N):
+            self.featlst[(wordid, i)] = []
+            self.featlst[(wordid, i)].append(self.features[i])
+            for f in lst:
+                self.featlst[(wordid, i)].append(self.features[(i, f)])
+                                                 
+                                                 
     def __len__(self):
         return len(self.features)
 
-    def __getitem__(self, word):
-        if word in self.features:
-            return self.features[word]
-        else:
-            return self.features(word)
+    def __getitem__(self, pair):
+        word, i = pair
+        wordid = self.words[word]
+        if (wordid, i) in self.featlst:
+            return self.featlst[(wordid, i)]
+
         
         
 class SurfaceForm(object):
@@ -207,6 +232,16 @@ class SurfaceForm(object):
         self.N = N
         self.train = train
         self.C = C
+        self.features = StringFeatures(N)
 
+        for word, vec in train:
+            self.features.store(word)
             
-    
+        self.theta = zeros((len(self.features)))
+            
+    def f(self, theta):
+        """ Log-likelihood of the training data """
+        pass
+
+    def g(self, theta):
+        pass
