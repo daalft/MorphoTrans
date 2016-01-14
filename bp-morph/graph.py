@@ -1,6 +1,6 @@
 """ Factor Graph for morphology """
 import numpy as np
-from numpy import zeros, ones, eye, dot, exp
+from numpy import zeros, ones, eye, dot, exp, outer
 from graphviz import Graph
 import itertools as it
 import operator
@@ -32,8 +32,6 @@ class Edge(object):
         stale = self.m_f
         self.m_f = self.v.b / self.m_v
         
-        self.f.b = self.f.b / stale * self.m_f
-
         
     def p2v(self):
         """ Passes the message to the variable """
@@ -101,11 +99,10 @@ class UnaryFactor(Factor):
 class BinaryFactor(Factor):
     """ Binary Factor """
     
-    def __init__(self, source_lang, source, target_lang, target, N):
+    def __init__(self, tp, source_lang, source, target_lang, target, N):
         super(BinaryFactor, self).__init__(N)
+        self.tp = tp
         self.N = N
-        self.F = eye(N)
-        self.F = np.random.rand(N, N)
         self.source_lang, self.target_lang = source_lang, target_lang
         self.source, self.target = source, target
 
@@ -113,7 +110,7 @@ class BinaryFactor(Factor):
     def p2(self, i):
         """ pass 2 the ith factor """
         j = 0 if i == 1 else 1
-        self.edges[i].m_v = exp(dot(self.edges[j].m_f, self.F))
+        self.edges[i].m_v = exp(dot(self.edges[j].m_f, self.tp.F))
         
         
     def __unicode__(self):
@@ -132,6 +129,23 @@ class FactorGraph(object):
         self.vs, self.fs = {}, {}
         self.edges = []
     
+
+    def neg(self):
+        """ 
+        get the negative part of the gradient.
+        the expected counts
+        """
+
+        for k, f in self.fs.items():
+
+            if len(f.edges) == 1:
+                pass
+            elif len(f.edges) == 2:
+                e1, e2 = f.edges[0], f.edges[1]
+                f.tp.neg += outer(e1.m_f, e2.m_f)
+            else:
+                raise("Higher-order Factor!!")
+
         
     def E_step(self, iterations=2):
         """ performs the E-step """
@@ -202,7 +216,7 @@ class FactorGraph(object):
             config_score = 1.0
             for k, f in self.fs.items():
                 vecs = [e.v.b for e in f.edges]
-                score = exp(dot(dot(vecs[0], f.F), vecs[1]))
+                score = exp(dot(dot(vecs[0], f.tp.F), vecs[1]))
                 config_score *= score
 
             Z += config_score

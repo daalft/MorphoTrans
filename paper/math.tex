@@ -15,36 +15,104 @@
 \newcommand{\lo}{\ell_1}
 \newcommand{\lt}{\ell_2}
 \newcommand{\All}{A_{\lt}^{\lo}}
+
+\newcommand{\x}{\vec{x}}
+\newcommand{\y}{\vec{y}}
+\renewcommand{\xi}{\vec{x}^{(i)}}
+\newcommand{\yi}{\vec{y}^{(i)}}
+\newcommand{\B}{\mathbb{B}}
+
+\newcommand{\vtheta}{\vec{\theta}}
 \begin{document}
 
-\section{Factor Graph}
-We will define the topology of the graph by phrase tables.  Let
-$\m_{k^\ell} \in \mathbb{B}^n$ be an encoding of {\em all possible}
-morphological tags for the $k$ word type in language $\ell$.  Note that $\mathbb{B}^n$
-denotes the set of binary vectors of length $n$. Let
-$\All$ be the set of all aligned types between
-languages $\ell_1$ and $\ell_2$. We define the model as
+
+\section{Simplified Restricted Boltzmann Machine}
+Let $(\xi, \yi) \in \mathcal{D}$ be the training data, where each $\xi, \yi \in \B^n$.
+Note that $\B^n$ denotes the set of all binary vectors of length $n$.
+We define our model
 \begin{equation}
-p(\m_1^{\ell_1}, \ldots, \m_N^{\ell_2} \mid \m_1^{\ell_2}, \ldots, \m_N^{\ell_2}) = \frac{1}{Z}\exp\left(\sum_{(k^{\lo}, k^{\lt})\in \All} \m_{k^{\lo}}^{\top} W \m_{k^{\lt}} + \sum_k u^{\top} f(k^{\lt}, \m_{k^{\lt}})  \right)
+p_{\vtheta}(\y \mid \x) = \frac{1}{Z(\x)} \exp\left(\x^{\top} W \y + \vec{b}^{\top}\y  \right),
 \end{equation}
-\subsection{Log-Linear Factors}
-We introduce unary factors that score the relation between the {\em surface form}
-of a word and it's morphological tag. This factor takes the form: $\exp\left( u^{\top} f(k^{\lt}, \m_{k^{\lt}}) \right)$.
-
-\subsection{Log-Quadratic Factors}
-The log-quadratic factors $\exp\left( \m_{k^{\lo}}^{\top} W \m_{k^{\lt}} \right)$ scores the relation between the
-morphological tag vectors of the source and target language. 
-
-
-\section{Inference}
-Belief Propagation.
+where
 \begin{equation}
-\text{score}{v_1, v_2) = x_{v_1}^{\top} W_{\alpha} x_{v_2}
+Z(\x) = \sum_{y' \in \mathbb{B}^n} \exp\left(\x^{\top} W \y + \vec{b}^{\top}\y  \right)
 \end{equation}
-\subsection{Variable to Factor Message}
-We want to compute the message
+and $W \in \mathbb{R}^{n \times n}$ and $\vec{b} \in \mathbb{R}^n$.
+The parameters of the model are $\vtheta = \{W, \vec{b}\}$.
+We now define the log-liklihood of the training data $\mathcal{D}$
+as
 \begin{equation}
-  \mu_{\alpha \rightarrow v_2}_i = x_{v_1}^{\top} W_{\alpha} x
-  \end{equation}
+  \ell\ell(\vtheta) = \sum_{(\xi, \yi) \in \mathcal{D}} \log p_{\vtheta}(\yi \mid \xi).
+\end{equation}
+The conditional independence assumptions give us a simple expression
+for the probability that $y_i = 1$ (a single component is turned on---recall binary vector!):
+\begin{equation}
+  p_{\vtheta}(y_i = 1) = \sigma( (\x^{\top}W)_i + b_i),
+\end{equation}
+where $\sigma$ is the component-wise sigmoid function. 
+
+{\bf Note} that this models ignores correlation between different
+components of the output vector $\y$. We will add this later
+if necessary, but it would ruin linear-time gradient computation. 
+
+
+
+\paragraph{Computation of $Z(\x)$:} The cardinality of $\B^n$ is exactly $2^n$
+and thus direct enumerate of the set is impossible. Luckily, there exists
+an efficient algorithm to compute $Z(\x)$ in $\mathcal{O}(n)$ time. We can see the algorithm with the following identity:
+\begin{equation}
+ Z(\x) = \prod_{i=1}^{n} \left(\exp\left( (\x^{\top}W)_i + b_i \right) + 1\right),
+\end{equation}
+where $(x^{\top}W)_i$ denotes the $i$th component of the vector $\x^{\top}W$
+and $b_i$ denotes the $i$th component of the vector $\vec{b}$.
+
+\paragraph{Computation of $\nabla_{\vtheta} \ell\ell$:}
+The gradient of this model will be the difference between observed
+and expected counts---as in all energy-based models. Moreover, the
+automatic differentiation theorem guarantees that its computation
+will take the same complexity as that of the log-likelihood, which is
+$\mathcal{O}(n)$ in this case. However, as we have $\mathcal{O}(n^2)$
+parameters, this term will dominate the computation.
+
+We get the following gradients with respect to $W$ and $b$:
+\begin{equation}
+  \nabla_{W} \ell\ell = \sum_{(\xi, \yi) \in \mathcal{D}} \xi \left(\yi - \sum_{i=1}^n p_{\vtheta}(y_i = 1 \mid \xi) \cdot \vec{e}_i  \right)^{\top},
+\end{equation}
+where $\vec{e}_i \in \mathbb{R}^n$ is the vector where all components are zero {\em except} for the $i$th
+component, which is 1, and
+\begin{equation}
+\nabla_{\vec{b}}\ell\ell = \sum_{(\xi, \yi) \in \mathcal{D}} \yi - p_{\vtheta}(y_i = 1 \mid \xi) \cdot \vec{e}_i .
+\end{equation}
+
+
+%% \section{Factor Graph}
+%% We will define the topology of the graph by phrase tables.  Let
+%% $\m_{k^\ell} \in \mathbb{B}^n$ be an encoding of {\em all possible}
+%% morphological tags for the $k$ word type in language $\ell$.  Note that $\mathbb{B}^n$
+%% denotes the set of binary vectors of length $n$. Let
+%% $\All$ be the set of all aligned types between
+%% languages $\ell_1$ and $\ell_2$. We define the model as
+%% \begin{equation}
+%% p(\m_1^{\ell_1}, \ldots, \m_N^{\ell_2} \mid \m_1^{\ell_2}, \ldots, \m_N^{\ell_2}) = \frac{1}{Z}\exp\left(\sum_{(k^{\lo}, k^{\lt})\in \All} \m_{k^{\lo}}^{\top} W \m_{k^{\lt}} + \sum_k u^{\top} f(k^{\lt}, \m_{k^{\lt}})  \right)
+%% \end{equation}
+%% \subsection{Log-Linear Factors}
+%% We introduce unary factors that score the relation between the {\em surface form}
+%% of a word and it's morphological tag. This factor takes the form: $\exp\left( u^{\top} f(k^{\lt}, \m_{k^{\lt}}) \right)$.
+
+%% \subsection{Log-Quadratic Factors}
+%% The log-quadratic factors $\exp\left( \m_{k^{\lo}}^{\top} W \m_{k^{\lt}} \right)$ scores the relation between the
+%% morphological tag vectors of the source and target language. 
+
+
+%% \section{Inference}
+%% Belief Propagation.
+%% \begin{equation}
+%% \text{score}{v_1, v_2) = x_{v_1}^{\top} W_{\alpha} x_{v_2}
+%% \end{equation}
+%% \subsection{Variable to Factor Message}
+%% We want to compute the message
+%% \begin{equation}
+%%   \mu_{\alpha \rightarrow v_2}_i = x_{v_1}^{\top} W_{\alpha} x
+%%   \end{equation}
 
 \end{document}
