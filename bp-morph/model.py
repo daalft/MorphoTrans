@@ -25,7 +25,7 @@ class RRBM(object):
 
     """
 
-    def __init__(self, N, train, C = 0.01):
+    def __init__(self, N, train, C = 0.00):
         self.N = N
         self.train = train
         self.C = C  # regularization coefficient
