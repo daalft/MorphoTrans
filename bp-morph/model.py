@@ -30,6 +30,7 @@ class RRBM(object):
         #self.W = eye(N)
         self.b = np.random.random(N)
         #self.b = zeros((N))
+
         
     def Z(self, W, b, x):
         """ Computes the log partition function Z(x) """
@@ -51,7 +52,6 @@ class RRBM(object):
             Z += exp(score)
         return Z
             
-
     
     def f(self, W, b):
         """ Log-likelihood of the training data """
