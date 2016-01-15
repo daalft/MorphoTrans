@@ -27,22 +27,33 @@ class RRBM(object):
 
     """
 
-    def __init__(self, N, train, C = 0.01):
+    def __init__(self, N, train, embedding_size, embeddings, C = 0.01):
         self.N = N
         self.train = train
         self.C = C  # regularization coefficient
+
+        # embeddings test to see if it improves
+        self.embedding_size
+        self.embeddings = embeddings
+
+        
         self.reset()
 
+        
 
     def reset(self, random=False):
         """ reset the parameters to the initial values (just copy the tag) """
         
         if random:
             self.W = np.random.rand(self.N, self.N)
+            self.E = np.random.rand(self.embedding_size, self.embedding_size)
             self.b = np.random.random(self.N)
+            self.e = np.random.random(self.embedding_size, self.embedding_size)
         else:
             self.W = eye(self.N)
+            self.E = np.random.rand(self.embedding_size, self.embedding_size)
             self.b = zeros((self.N))
+            self.e = np.random.random(self.embedding_size, self.embedding_size)
         
         
     def Z(self, W, b, x):
@@ -241,7 +252,9 @@ class SurfaceForm(object):
             
     def f(self, theta):
         """ Log-likelihood of the training data """
-        pass
+
+        for word, vec in train:
+            pass
 
     def g(self, theta):
         pass

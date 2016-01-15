@@ -52,7 +52,7 @@ def sample_from_d(d, N, lex1, lex2, filt=None):
 # tag to tag projection experiments
 
 # number of tag sizes to get for the learning curve
-test_size = 1000
+test_size = 100
 sizes = map(lambda x : 10*x, xrange(1, 101))
 # number of experiments to run with each size
 experiments = 100
@@ -75,12 +75,15 @@ for experiment in xrange(experiments):
         #    print l2, entry2[1]
 
         
-    for size in [110]: #sizes:
+    for size in sizes:
         train_keys = sample_from_d(d, size, lex_col[lang1], lex_col[lang2], test_keys_set)
         train = []
-        for (l1, l2) in train_keys:
-            train.append((lex_col[lang1][l1], lex_col[lang2][l2]))
-
+        #for (l1, l2) in train_keys:
+        #    train.append((lex_col[lang1][l1], lex_col[lang2][l2]))
+        #    print l1, lex_col[lang1].pp(l1)[1]
+        #    print l2, lex_col[lang2].pp(l2)[1]
+        #    print
+        #exit(0)
         model.reset()
         model.train = train
 
@@ -92,7 +95,7 @@ for experiment in xrange(experiments):
         # grid search
         for C in [0.1]: #[0.1, 0.5, 1.0, 2.0, 3.0, 4.0]:
             model.C = C
-            model.learn(disp=0)
+            model.learn(disp=1)
             err_tmp, hmm_tmp, mistakes_tmp = model.eval(test)
 
             if hmm_tmp < hmm:
@@ -102,18 +105,18 @@ for experiment in xrange(experiments):
         
         print size, experiment, before, after, C_best
 
-        for k, v in sorted(mistakes.items(), key=lambda x: -x[1]):
-            print lex_col.avs.lookup(k), v
+        #for k, v in sorted(mistakes.items(), key=lambda x: -x[1]):
+        #    print lex_col.avs.lookup(k), v
 
-        for l1, l2 in test_keys:
-            i1 = lex_col[lang1][l1]
-            i2 = lex_col[lang2][l2]
-            print l1, lex_col[lang1].pp(l1)
-            print l2, lex_col[lang2].pp(l2)
-            err, hmm, mistakes = model.eval([(i1, i2)])
-            for k, v in mistakes.items():
-                print lex_col.avs.lookup(k)
-            raw_input()
-        raw_input()
+        # for l1, l2 in test_keys:
+        #     i1 = lex_col[lang1][l1]
+        #     i2 = lex_col[lang2][l2]
+        #     print l1, lex_col[lang1].pp(l1)
+        #     print l2, lex_col[lang2].pp(l2)
+        #     err, hmm, mistakes = model.eval([(i1, i2)])
+        #     for k, v in mistakes.items():
+        #         print lex_col.avs.lookup(k)
+        #     raw_input()
+        # raw_input()
         #print len(test), len(train), len(test.intersection(train))
         #exit(0)

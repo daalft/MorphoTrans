@@ -115,8 +115,8 @@ class Lexicon(object):
                 for tag in ts:
                     a, v = tag.split("=")
 
-                    if a != "pos":
-                        continue
+                    #if a != "pos":
+                    #    continue
                     
                     j = self.avs[(a, v)]
                     vec[j] = 1.0
