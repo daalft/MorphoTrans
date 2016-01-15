@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import eye, zeros, exp, log, dot, outer
+from numpy import eye, zeros, zeros_like, exp, log, dot, outer
 from scipy.spatial.distance import hamming
 import itertools as it
 from scipy.optimize import fmin_l_bfgs_b as lbfgs
@@ -27,9 +27,10 @@ class RRBM(object):
 
     """
 
-    def __init__(self, N, embedding_size, character_size, train, C = 0.01):
+    def __init__(self, N, embedding_size, character_size, train, train_gen, C = 0.01):
         self.N = N
         self.train = train
+        self.train_gen = []
         self.C = C  # regularization coefficient
 
         # embeddings test to see if it improves
@@ -104,18 +105,85 @@ class RRBM(object):
             marg = tmp / (1 + tmp)
             W_g -= outer(x, y - marg)
             b_g -= (y - marg)
-            #E_g -= outer(e, y - marg)
+            E_g -= outer(e, y - marg)
             S_g -= outer(c, y - marg)
             
         return W_g, E_g, S_g, b_g
 
+    
+    def cd(self, W, E, S, b, x, e, c):
+        """ contrastive divergence """
+
+        marg_y = self.marg_y(W, E, S, b, x, e, c)
+        y = zeros_like(marg_y)
+        for i, m in enumerate(marg_y):
+            y[i] = np.random.binomial(1, m)
+
+        marg_x = self.marg_x(W, E, S, b, y, e, c)
+        x_prime = zeros_like(marg_x)
+        for i, m in enumerate(marg_x):
+            x_prime[i] = np.random.binomial(1, m)
+
+        marg_y = self.marg_y(W, E, S, b, x_prime, e, c)
+        y_prime = zeros_like(marg_y)
+        for i, m in enumerate(marg_y):
+            y_prime[i] = np.random.binomial(1, m)
+
+        return outer(x, y) - outer(x_prime, y_prime)
+
+    
+    def g_gen(self, W, E, S, b):
+        """ Generative model gradient """
+        
+        W_g, E_g, S_g, b_g = zeros((self.N, self.N)), zeros((self.embedding_size, self.N)), zeros((self.character_size, self.N)), zeros((self.N))
+        for x, e, c in self.train_gen:
+            W_g -= self.cd(W, E, S, b, x, e, c)
+            #b_g -= (y - marg)
+            #E_g -= outer(e, y - marg)
+            #S_g -= outer(c, y - marg)
+            
+        return W_g, E_g, S_g, b_g
+
+
+    def sample_x_given_y(self, W, E, S, b, y, e, c):
+        """ sample x given y """
+        marg = self.marg_x(W, E, S, b, y, e, c)
+        sample = zeros_like(marg)
+        for i, m in enumerate(marg):
+            sample[i] = np.random.binomial(1, m)
+        return sample
+        
+
+    def sample_y_given_x(self, W, E, S, b, x, e, c):
+        """ sample y given x """
+        
+        marg = self.marg_y(W, E, S, b, x, e, c)
+        sample = zeros_like(marg)
+        for i, m in enumerate(marg):
+            sample[i] = np.random.binomial(1, m)
+        return sample
+
+    
     def marg(self, x, e, c):
-        """ returns the marginal distribution  y given an x using the parameters of the model """
+        """ returns the marginal distribution y given an x using the parameters of the model """
         tmp = exp(dot(x, self.W) + dot(e, self.E) + dot(c, self.S) + self.b)
         marg = tmp / (1 + tmp)
         return marg
 
+    
+    def marg_y(self, W, E, S, b, x, e, c):
+        """ returns the marginal distribution y given an x using the parameters of the model """
+        tmp = exp(dot(x, W) + dot(e, E) + dot(c, S) + b)
+        marg = tmp / (1 + tmp)
+        return marg
 
+    
+    def marg_x(self, W, E, S, b, y, e, c):
+        """ returns the marginal distribution x given an y using the parameters of the model """
+        tmp = exp(dot(W, y) + dot(e, E) + dot(c, S) + b)
+        marg = tmp / (1 + tmp)
+        return marg
+        
     def predict(self, x, e, c):
         """ predicts a y given an x using the parameters of the model """
         return np.round(self.marg(x, e, c))
@@ -158,6 +226,14 @@ class RRBM(object):
         v, _, _ = lbfgs(ff, v, fprime=gg, maxiter=maxiter, disp=disp)
         self.W, self.E, self.S, self.b = self.vec2theta(v)
 
+
+    def take_gen_step(self, eta):
+        """ learn gen """
+
+        self.gW, _, _, _ = self.g(self.W, self.E, self.S, self.b)
+        self.gW_gen, _, _, _ = self.g_gen(self.W, self.E, self.S, self.b):
+
+        self.W -= eta * (self.gW + self.gW_gen)
         
     def theta2vec(self, W, E, S, b):
         """ converts the parameters W and b to one long vector """
