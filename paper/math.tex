@@ -58,7 +58,7 @@ if necessary, but it would ruin linear-time gradient computation.
 
 
 \paragraph{Computation of $Z(\x)$:} The cardinality of $\B^n$ is exactly $2^n$
-and thus direct enumerate of the set is impossible. Luckily, there exists
+and thus direct enumeration of the set is impossible. Luckily, there exists
 an efficient algorithm to compute $Z(\x)$ in $\mathcal{O}(n)$ time. We can see the algorithm with the following identity:
 \begin{equation}
  Z(\x) = \prod_{i=1}^{n} \left(\exp\left( (\x^{\top}W)_i + b_i \right) + 1\right),
@@ -82,6 +82,22 @@ where $\vec{e}_i \in \mathbb{R}^n$ is the vector where all components are zero {
 component, which is 1, and
 \begin{equation}
 \nabla_{\vec{b}}\ell\ell = \sum_{(\xi, \yi) \in \mathcal{D}} \yi - p_{\vtheta}(y_i = 1 \mid \xi) \cdot \vec{e}_i .
+\end{equation}
+
+
+\section{Joint Model}
+Now we consider how to compute with the joint model,
+\begin{equation}
+p_{\vtheta}(\x, \y) = \frac{1}{Z} \exp\left(\x^{\top}W \y + \vec{b}^{\top} \y \right).
+\end{equation}
+The partition function is now defined as
+\begin{align}
+  Z &= \sum_{\x' \in \B^n}\sum_{\y' \in \B^n} \exp\left(\x'^{\top} W\y' + \vec{b}^{\top} \y' \right) \\
+  &= \sum_{\x' \in \B^n} Z(\x')
+\end{align}
+
+\begin{equation}
+  \prod_{i=1}^n \left(1 + \prod_{j=1}^n \left( \exp(W_{ij}) + 1 \right) \right)
 \end{equation}
 
 
